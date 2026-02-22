@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$#" -lt 2 ]; then
+  cat <<'USAGE' >&2
+Usage:
+  pmerge <input_dir> <keyword1> [keyword2 ...]
+
+Examples:
+  pmerge japan IC-211 IC-212
+  PMERGE_EXTRA_ARGS="--dry-run" pmerge japan IC-211
+USAGE
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INPUT_DIR="$1"
+shift
+
+OUTPUT_DIR="${PMERGE_OUTPUT_DIR:-$SCRIPT_DIR/output/pdf}"
+TMP_DIR="${PMERGE_TMP_DIR:-$SCRIPT_DIR/tmp/pdfs}"
+EXTRA_ARGS="${PMERGE_EXTRA_ARGS:-}"
+
+if [ -n "$EXTRA_ARGS" ]; then
+  # shellcheck disable=SC2086
+  exec python3 "$SCRIPT_DIR/skills/pdf-keyword-merge/scripts/keyword_merge.py" \
+    --input-dir "$INPUT_DIR" \
+    --keywords "$@" \
+    --output-dir "$OUTPUT_DIR" \
+    --tmp-dir "$TMP_DIR" \
+    $EXTRA_ARGS
+else
+  exec python3 "$SCRIPT_DIR/skills/pdf-keyword-merge/scripts/keyword_merge.py" \
+    --input-dir "$INPUT_DIR" \
+    --keywords "$@" \
+    --output-dir "$OUTPUT_DIR" \
+    --tmp-dir "$TMP_DIR"
+fi

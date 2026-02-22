@@ -1,0 +1,4 @@
+interface:
+  display_name: "PDF Keyword Merge"
+  short_description: "Find PDFs containing keywords and merge by keyword"
+  default_prompt: "Scan PDFs, find documents containing each keyword, and merge matches into output/pdf/<keyword>.pdf"
