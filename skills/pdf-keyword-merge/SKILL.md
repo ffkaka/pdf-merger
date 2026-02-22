@@ -16,7 +16,9 @@ Use this skill to automate keyword-based PDF collection and merging.
 
 ## Workflow
 1. Collect input PDFs from the target folder.
-2. Extract text from each PDF and check if each keyword is present.
+2. Choose match mode:
+   - `content`: Extract text from each PDF and match by content.
+   - `filename`: Match by PDF file name only (no PDF content read).
 3. Build a per-keyword match list.
 4. Merge matched PDFs in stable order (path sort).
 5. Save each merged file as `output/pdf/<keyword>.pdf`.
@@ -50,8 +52,10 @@ Useful flags:
 - `--case-sensitive`: Match with case sensitivity.
 - `--dry-run`: Print matches without creating merged PDFs.
 - `--no-recursive`: Scan only the top level of input directory.
+- `--match-mode content|filename`: Choose content match or filename match.
 - For `pmerge`, pass extra flags via env var:
   - `PMERGE_EXTRA_ARGS="--dry-run" pmerge japan AAA-BBB1`
+  - `PMERGE_EXTRA_ARGS="--match-mode filename" pmerge japan IC-211`
 
 ## Quality Checks
 - Keep intermediate artifacts under `tmp/pdfs/`.
@@ -67,3 +71,4 @@ Then inspect rendered images for missing pages, overlap, clipping, or broken gly
 ## Notes
 - If no PDF matches a keyword, the script skips output for that keyword and reports it.
 - Output filename uses the keyword value; reserved path characters are replaced with `_` to avoid filesystem errors.
+- `--match-mode filename` uses only file names and does not extract or read PDF text.
