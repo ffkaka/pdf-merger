@@ -69,6 +69,15 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Do not write merged PDFs; only print/report matches",
     )
+    parser.add_argument(
+        "--match-mode",
+        choices=["content", "filename"],
+        default="content",
+        help=(
+            "Keyword matching target: 'content' extracts PDF text, "
+            "'filename' matches against PDF file names only."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -191,6 +200,13 @@ def matches_keyword(text: str, keyword: str, case_sensitive: bool) -> bool:
     return keyword.casefold() in text.casefold()
 
 
+def matches_filename(pdf_path: Path, keyword: str, case_sensitive: bool) -> bool:
+    name = pdf_path.name
+    if case_sensitive:
+        return keyword in name
+    return keyword.casefold() in name.casefold()
+
+
 def merge_pdfs_with_pypdf(pdf_paths: List[Path], output_path: Path) -> bool:
     if PdfWriter is None or PdfReader is None:
         return False
@@ -250,25 +266,34 @@ def main() -> int:
         raise FileNotFoundError(f"No PDF files found under: {input_dir}")
 
     extracted_text: Dict[Path, str] = {}
-    for pdf_path in pdf_paths:
-        try:
-            extracted_text[pdf_path] = extract_text(pdf_path, tmp_dir)
-        except Exception as exc:
-            print(f"[WARN] Failed to read {pdf_path}: {exc}")
-            extracted_text[pdf_path] = ""
+    if args.match_mode == "content":
+        for pdf_path in pdf_paths:
+            try:
+                extracted_text[pdf_path] = extract_text(pdf_path, tmp_dir)
+            except Exception as exc:
+                print(f"[WARN] Failed to read {pdf_path}: {exc}")
+                extracted_text[pdf_path] = ""
 
     report = {
         "input_dir": str(input_dir),
         "total_pdfs": len(pdf_paths),
+        "match_mode": args.match_mode,
         "keywords": {},
     }
 
     for keyword in keywords:
-        matched = [
-            pdf_path
-            for pdf_path in pdf_paths
-            if matches_keyword(extracted_text.get(pdf_path, ""), keyword, args.case_sensitive)
-        ]
+        if args.match_mode == "filename":
+            matched = [
+                pdf_path
+                for pdf_path in pdf_paths
+                if matches_filename(pdf_path, keyword, args.case_sensitive)
+            ]
+        else:
+            matched = [
+                pdf_path
+                for pdf_path in pdf_paths
+                if matches_keyword(extracted_text.get(pdf_path, ""), keyword, args.case_sensitive)
+            ]
 
         report["keywords"][keyword] = {
             "match_count": len(matched),

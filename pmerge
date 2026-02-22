@@ -9,6 +9,7 @@ Usage:
 Examples:
   pmerge japan IC-211 IC-212
   PMERGE_EXTRA_ARGS="--dry-run" pmerge japan IC-211
+  PMERGE_EXTRA_ARGS="--match-mode filename" pmerge japan IC-211
 USAGE
   exit 1
 fi
