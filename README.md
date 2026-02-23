@@ -7,13 +7,13 @@
 프로젝트 루트에서 실행:
 
 ```bash
-PMERGE_KEYWORDS_FILE=tmp/pdfs/keywords.txt ./pmerge japan
+./pmerge japan --keywords-file tmp/pdfs/keywords.txt
 ```
 
 파일명 기준 필터링(본문 미검색):
 
 ```bash
-PMERGE_KEYWORDS_FILE=tmp/pdfs/keywords.txt PMERGE_EXTRA_ARGS="--match-mode filename" ./pmerge japan
+PMERGE_EXTRA_ARGS="--match-mode filename" ./pmerge japan --keywords-file tmp/pdfs/keywords.txt
 ```
 
 기본 동작:
@@ -35,7 +35,7 @@ Codex 프롬프트에서 `@경로`를 붙이면 대상 파일/폴더 문맥이 �
 ```text
 @AGENTS.md 규칙대로 병합해.
 입력 폴더는 @japan, 키워드 파일은 @tmp/pdfs/keywords.txt 를 사용해.
-PMERGE_KEYWORDS_FILE 방식으로 실행하고 결과는 @output/pdf 에 저장해.
+./pmerge 명령으로 실행하고 결과는 @output/pdf 에 저장해.
 머지 후 결과 PDF와 @tmp/pdfs/keyword_merge_report.json 존재 여부, 파일 크기, 첫 페이지 렌더링까지 검증해.
 ```
 

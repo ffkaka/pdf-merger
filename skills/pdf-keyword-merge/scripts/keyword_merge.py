@@ -83,10 +83,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--match-mode",
         choices=["content", "filename"],
-        default="content",
+        default="filename",
         help=(
-            "Keyword matching target: 'content' extracts PDF text, "
-            "'filename' matches against PDF file names only."
+            "Keyword matching target: 'filename' matches against PDF file names only (default), "
+            "'content' extracts PDF text."
         ),
     )
     return parser.parse_args()

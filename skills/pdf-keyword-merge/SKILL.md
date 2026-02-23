@@ -17,8 +17,8 @@ Use this skill to automate keyword-based PDF collection and merging.
 ## Workflow
 1. Collect input PDFs from the target folder.
 2. Choose match mode:
+   - `filename` (default): Match by PDF file name only (no PDF content read).
    - `content`: Extract text from each PDF and match by content.
-   - `filename`: Match by PDF file name only (no PDF content read).
 3. Build a per-keyword match list, then union all matches into one unique merge target list.
 4. Merge matched PDFs in stable order (path sort).
 5. Save one merged output file (default: `output/pdf/merged_keywords.pdf`).
@@ -36,7 +36,7 @@ Preferred command from repository root:
 Keyword-file based (recommended for many keywords):
 
 ```bash
-PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt ./pmerge japan
+./pmerge japan --keywords-file tmp/pdfs/keywords.txt
 ```
 
 If `pmerge` is on `PATH`, run:
@@ -61,14 +61,14 @@ Useful flags:
 - `--case-sensitive`: Match with case sensitivity.
 - `--dry-run`: Print matches without creating merged PDFs.
 - `--no-recursive`: Scan only the top level of input directory.
-- `--match-mode content|filename`: Choose content match or filename match.
+- `--match-mode content|filename`: Choose content match or filename match (default: filename).
 - `--output-name <name>.pdf`: Set output filename for the single merged file.
 - `--size-limit-mb <float>`: Maximum output size in MB (default: 2.0).
 - For `pmerge`, pass extra flags via env var:
   - `PMERGE_EXTRA_ARGS="--dry-run" pmerge japan AAA-BBB1`
   - `PMERGE_EXTRA_ARGS="--match-mode filename" pmerge japan IC-211`
   - `PMERGE_OUTPUT_NAME="my_merged.pdf" pmerge japan AAA-BBB1 AAA-BBB2`
-  - `PMERGE_KEYWORDS_FILE="/home/<USER>/pdf-merger/keywords.txt" pmerge japan`
+  - `pmerge japan --keywords-file tmp/pdfs/keywords.txt`
 
 ## Quality Checks
 - Keep intermediate artifacts under `tmp/pdfs/`.

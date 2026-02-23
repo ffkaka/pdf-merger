@@ -5,14 +5,14 @@ if [ "$#" -lt 1 ]; then
   cat <<'USAGE' >&2
 Usage:
   pmerge <input_dir> [keyword1 keyword2 ...]
-  PMERGE_KEYWORDS_FILE=/path/keywords.txt pmerge <input_dir>
+  pmerge <input_dir> --keywords-file <path>
+  pmerge <input_dir> --keywords-file <path> [keyword1 keyword2 ...]
 
 Examples:
   pmerge japan IC-211 IC-212
-  PMERGE_EXTRA_ARGS="--dry-run" pmerge japan IC-211
-  PMERGE_EXTRA_ARGS="--match-mode filename" pmerge japan IC-211
-  PMERGE_OUTPUT_NAME="my_merge.pdf" pmerge japan IC-211 IC-212
-  PMERGE_KEYWORDS_FILE=/home/user/pdf-merger/keywords.txt pmerge japan
+  pmerge japan --keywords-file tmp/pdfs/keywords.txt
+  pmerge japan --keywords-file tmp/pdfs/keywords.txt IC-211
+  PMERGE_EXTRA_ARGS="--dry-run" pmerge japan --keywords-file tmp/pdfs/keywords.txt
 USAGE
   exit 1
 fi
@@ -27,15 +27,33 @@ TMP_DIR="${PMERGE_TMP_DIR:-$SCRIPT_DIR/tmp/pdfs}"
 EXTRA_ARGS="${PMERGE_EXTRA_ARGS:-}"
 KEYWORDS_FILE="${PMERGE_KEYWORDS_FILE:-}"
 
-if [ "$#" -eq 0 ] && [ -z "$KEYWORDS_FILE" ]; then
-  echo "Error: provide keywords or set PMERGE_KEYWORDS_FILE" >&2
+KEYWORDS=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --keywords-file)
+      if [ "$#" -lt 2 ]; then
+        echo "Error: --keywords-file requires a path" >&2
+        exit 1
+      fi
+      KEYWORDS_FILE="$2"
+      shift 2
+      ;;
+    *)
+      KEYWORDS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [ "${#KEYWORDS[@]}" -eq 0 ] && [ -z "$KEYWORDS_FILE" ]; then
+  echo "Error: provide keywords or --keywords-file <path>" >&2
   exit 1
 fi
 
 args=(
   python3 "$SCRIPT_DIR/skills/pdf-keyword-merge/scripts/keyword_merge.py"
   --input-dir "$INPUT_DIR"
-  --keywords "$@"
+  --keywords "${KEYWORDS[@]}"
   --output-dir "$OUTPUT_DIR"
   --output-name "$OUTPUT_NAME"
   --tmp-dir "$TMP_DIR"

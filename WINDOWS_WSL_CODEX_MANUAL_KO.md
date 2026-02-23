@@ -119,218 +119,74 @@ codex skill install pdf
 
 ## 6. pmerge 사용법 (WSL 내부)
 
-프로젝트 루트에서 실행:
+처음 사용하는 경우 아래 3단계만 따라하면 된다.
 
-```bash
-./pmerge <폴더명> [키워드1 키워드2 ...]
-```
-
-예시:
+1. 프로젝트 폴더로 이동:
 ```bash
 cd ~/pdf-merger
-./pmerge japan IC-211 IC-212 IC-220
 ```
 
-키워드 파일 기반(권장):
-```bash
-PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt ./pmerge japan
-```
-
-드라이런:
-```bash
-PMERGE_EXTRA_ARGS="--dry-run" ./pmerge japan IC-211 IC-212
-```
-
-옵션 환경변수:
-- `PMERGE_OUTPUT_DIR` (기본: `~/pdf-merger/output/pdf`)
-- `PMERGE_OUTPUT_NAME` (기본: `merged_keywords.pdf`)
-- `PMERGE_TMP_DIR` (기본: `~/pdf-merger/tmp/pdfs`)
-- `PMERGE_KEYWORDS_FILE` (키워드 파일 경로)
-- `PMERGE_EXTRA_ARGS` (내부 Python 실행 옵션 전달)
-
-기본 용량 정책:
-- 출력 PDF는 기본 2MB 제한을 적용한다.
-- 2MB를 넘으면 자동으로 인덱스 분할 파일을 생성한다.
-  - 예: `merged_keywords_01.pdf`, `merged_keywords_02.pdf`
-
-### 6-1) PMERGE_EXTRA_ARGS 상세 옵션 전체
-
-`PMERGE_EXTRA_ARGS`는 `keyword_merge.py`에 그대로 전달된다.
-
-지원 옵션:
-- `--dry-run`
-- `--case-sensitive`
-- `--no-recursive`
-- `--match-mode content|filename`
-- `--keywords-file <파일경로>`
-
-아래는 각 옵션의 의미와 실사용 예시다.
-
-1. `--dry-run`
-- 기능: 병합 파일을 만들지 않고, 어떤 파일이 매칭되는지만 출력한다.
-- 사용 예:
-```bash
-PMERGE_EXTRA_ARGS="--dry-run" pmerge japan IC-211 IC-212
-```
-
-2. `--case-sensitive`
-- 기능: 대소문자를 구분해서 키워드를 찾는다.
-- 기본값: 대소문자 무시(case-insensitive)
-- 사용 예:
-```bash
-PMERGE_EXTRA_ARGS="--case-sensitive" pmerge japan ic-211
-```
-
-3. `--no-recursive`
-- 기능: 하위 폴더를 탐색하지 않고, 지정한 폴더의 최상위 PDF만 검색한다.
-- 사용 예:
-```bash
-PMERGE_EXTRA_ARGS="--no-recursive" pmerge japan IC-211
-```
-
-4. `--match-mode content`
-- 기능: PDF 본문 텍스트를 추출해서 키워드를 매칭한다. (기본값)
-- 특징: 정확도는 높지만 PDF가 많으면 시간이 더 걸릴 수 있다.
-- 사용 예:
-```bash
-PMERGE_EXTRA_ARGS="--match-mode content" pmerge japan IC-211
-```
-
-5. `--match-mode filename`
-- 기능: PDF 파일명에 키워드가 포함되는지만 검사한다.
-- 중요: 이 모드에서는 PDF 내용(본문 텍스트)을 읽지 않는다.
-- 사용 예:
-```bash
-PMERGE_EXTRA_ARGS="--match-mode filename" pmerge japan IC-211 IMC-211
-```
-
-6. `--keywords-file <파일경로>`
-- 기능: 키워드를 명령행 인자 대신 파일에서 읽는다. (한 줄에 키워드 1개)
-- 파일 예 (`keywords.txt`):
+2. 키워드 파일 준비 (`tmp/pdfs/keywords.txt`):
 ```text
 IC-211
 IC-212
 IC-220
 ```
-- 사용 예:
+
+3. 병합 실행:
 ```bash
-PMERGE_EXTRA_ARGS="--keywords-file /home/<USER>/pdf-merger/keywords.txt" pmerge japan
+./pmerge japan --keywords-file tmp/pdfs/keywords.txt
 ```
 
-같은 기능을 더 간단히 쓰려면 `PMERGE_KEYWORDS_FILE`을 사용한다.
+결과:
+- 병합 PDF: `output/pdf/merged_keywords.pdf`
+- 리포트: `tmp/pdfs/keyword_merge_report.json`
+
+자동 처리:
+- 기본 검색 기준은 파일명이다.
+- 결과가 2MB를 넘으면 자동으로 분할 파일을 만든다.
+  - 예: `merged_keywords_01.pdf`, `merged_keywords_02.pdf`
+
+자주 쓰는 추가 예시(선택):
+- 내용(본문) 기준으로 검색하고 싶을 때:
 ```bash
-PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt pmerge japan
+PMERGE_EXTRA_ARGS="--match-mode content" ./pmerge japan --keywords-file tmp/pdfs/keywords.txt
 ```
-
-### 6-2) PMERGE_EXTRA_ARGS 조합 예시
-
-1. 파일명 기준 + 대소문자 구분 + 드라이런:
+- 먼저 매칭 결과만 확인할 때:
 ```bash
-PMERGE_EXTRA_ARGS="--match-mode filename --case-sensitive --dry-run" pmerge japan IC-211
+PMERGE_EXTRA_ARGS="--dry-run" ./pmerge japan --keywords-file tmp/pdfs/keywords.txt
 ```
-
-2. 본문 검색 + 하위폴더 제외:
-```bash
-PMERGE_EXTRA_ARGS="--match-mode content --no-recursive" pmerge japan IC-211 IC-212
-```
-
-3. 키워드 파일 + 파일명 기준:
-```bash
-PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt PMERGE_EXTRA_ARGS="--match-mode filename" pmerge japan
-```
-
-### 6-3) 자주 하는 실수
-
-1. `PMERGE_EXTRA_ARGS`를 따옴표 없이 입력
-- 공백이 포함된 옵션 문자열은 반드시 큰따옴표로 감싼다.
-
-2. `--keywords-file` 경로를 Windows 경로로 입력
-- WSL 내부 경로(`/home/...`)를 사용한다.
-
-3. 파일명 기준이 필요한데 `--match-mode`를 지정하지 않음
-- 기본은 `content`이므로, 파일명 기준이면 반드시 `--match-mode filename`을 넣는다.
-
-4. 출력 파일명이 기본값으로 덮어써지는 문제
-- `PMERGE_OUTPUT_NAME`으로 작업별 파일명을 지정한다.
-- 예:
-```bash
-PMERGE_OUTPUT_NAME=shipment_A.pdf PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt pmerge japan
-```
-
----
-
-
 ---
 
 ## 7. Codex 프롬프트 예시 (머지 + 검증)
 
-아래 예시는 Codex 대화창(프롬프트)에서 그대로 사용할 수 있다.
+아래처럼 **입력폴더 + 키워드 파일**만 알려주면 된다.  
+수동 실행 명령이 필요하면 `6번`을 참고한다.
 
-### 7-1) 왜 `@경로`를 붙여야 하나
+### 7-1) 왜 `@경로`를 붙이나
 
-Codex 프롬프트에서 `@경로`를 붙이면 해당 파일/폴더를 작업 문맥으로 명확히 지정할 수 있다.
+`@경로`를 붙이면 Codex가 어떤 파일/폴더를 기준으로 처리할지 정확히 이해한다.
 
-장점:
-- 어떤 파일을 기준으로 작업할지 모호성이 줄어든다.
-- 현재 디렉터리 기준 상대경로를 그대로 써도 대상이 명확해진다.
-- `사용방법` 같은 추상 질의에서도 프로젝트 규칙(`@AGENTS.md`)을 근거로 일관된 답을 받기 쉽다.
-
-예:
+자주 쓰는 형태:
 - `@AGENTS.md`
 - `@japan`
 - `@tmp/pdfs/keywords.txt`
 
-### 7-2) 가장 간단한 실행 예시 (상대경로 + 키워드 파일)
+### 7-2) 가장 쉬운 요청 예시
 
 ```text
-@AGENTS.md 규칙대로 병합해.
-입력 폴더는 @japan, 키워드 파일은 @tmp/pdfs/keywords.txt 를 사용해.
-PMERGE_KEYWORDS_FILE 방식으로 실행하고 결과는 @output/pdf 에 저장해.
-머지 후 결과 PDF와 @tmp/pdfs/keyword_merge_report.json 존재 여부, 파일 크기, 첫 페이지 렌더링까지 검증해.
-검증 결과까지 요약해서 보고해.
+@AGENTS.md 규칙대로 처리해줘.
+입력폴더는 @japan, 키워드 파일은 @tmp/pdfs/keywords.txt 야.
+필터링/병합하고 결과 파일과 검증 결과를 알려줘.
 ```
 
-### 7-3) 파일명 기준 머지(본문 미검색) 예시
+### 7-3) "사용방법 알려줘" / "사용방법" 요청 예시
 
 ```text
-@japan 폴더를 파일명 기준으로만 필터링해서 병합해.
-키워드는 @tmp/pdfs/keywords.txt 파일에서 읽고,
-PMERGE_KEYWORDS_FILE + PMERGE_EXTRA_ARGS="--match-mode filename" 조합으로 실행해.
-2MB 초과 시 분할 파일(_01, _02 ...) 생성 여부까지 검증해.
+@AGENTS.md 먼저 확인하고 이 프로젝트 사용방법 알려줘.
+입력은 @japan 폴더와 @tmp/pdfs/keywords.txt 파일을 기준으로 설명해줘.
+수동 실행이 필요하면 6번 항목을 보라고 함께 안내해줘.
 ```
-
-### 7-4) 드라이런 후 실제 실행 예시
-
-```text
-먼저 드라이런으로 매칭 개수 확인하고, 그다음 실제 머지를 수행해.
-키워드 파일은 @tmp/pdfs/keywords.txt, 입력 폴더는 @japan.
-드라이런 결과와 실제 생성 결과를 비교해서 누락 여부를 확인해.
-```
-
-### 7-5) 출력 파일명 지정 + 검증 자동화 예시
-
-```text
-@tmp/pdfs/keywords.txt 키워드 파일로 병합해.
-출력 파일명은 shipment_2026_02.pdf 로 지정하고,
-완료 후 생성된 PDF 목록, 파일 크기, 리포트 match_count를 표 형태로 정리해.
-```
-
-### 7-6) "사용방법 알려줘" / "사용방법" 요청 시 권장 프롬프트
-
-아래처럼 `@AGENTS.md`와 실제 입력 경로를 함께 주면, Codex가 실행 가능한 형태로 안내하기 쉽다.
-
-```text
-@AGENTS.md 기준으로 이 프로젝트 사용방법 알려줘.
-특히 @japan 폴더와 @tmp/pdfs/keywords.txt 를 사용해서
-필터링, 병합, 2MB 초과 시 분할 생성, 검증까지 한 번에 하는 절차를
-초보자도 따라할 수 있게 명령어 중심으로 설명해줘.
-```
-
-검증 최소 체크리스트(프롬프트에 함께 넣기 권장):
-- 결과 PDF 존재 여부 (`output/pdf/*.pdf`)
-- 리포트 존재 여부 (`tmp/pdfs/keyword_merge_report.json`)
-- 키워드별 match_count 확인
-- 샘플 페이지 렌더링 검사(깨짐/누락/겹침)
 
 ---
 
@@ -383,7 +239,7 @@ which gs
 - 대량 병합 작업은 WSL 내부에서 실행한다.
 - 결과물은 `output/pdf/`만 최종 산출물로 취급한다.
 - `tmp/pdfs/`는 중간 산출물/리포트 용도로 유지한다.
-- 키워드가 많으면 파일(`--keywords-file` 또는 `PMERGE_KEYWORDS_FILE`) 기반으로 관리한다.
+- 키워드가 많으면 파일(`--keywords-file`) 기반으로 관리한다.
 
 ---
 
