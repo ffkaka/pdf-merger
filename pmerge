@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -lt 2 ]; then
+if [ "$#" -lt 1 ]; then
   cat <<'USAGE' >&2
 Usage:
-  pmerge <input_dir> <keyword1> [keyword2 ...]
+  pmerge <input_dir> [keyword1 keyword2 ...]
+  PMERGE_KEYWORDS_FILE=/path/keywords.txt pmerge <input_dir>
 
 Examples:
   pmerge japan IC-211 IC-212
   PMERGE_EXTRA_ARGS="--dry-run" pmerge japan IC-211
   PMERGE_EXTRA_ARGS="--match-mode filename" pmerge japan IC-211
+  PMERGE_OUTPUT_NAME="my_merge.pdf" pmerge japan IC-211 IC-212
+  PMERGE_KEYWORDS_FILE=/home/user/pdf-merger/keywords.txt pmerge japan
 USAGE
   exit 1
 fi
@@ -19,21 +22,33 @@ INPUT_DIR="$1"
 shift
 
 OUTPUT_DIR="${PMERGE_OUTPUT_DIR:-$SCRIPT_DIR/output/pdf}"
+OUTPUT_NAME="${PMERGE_OUTPUT_NAME:-merged_keywords.pdf}"
 TMP_DIR="${PMERGE_TMP_DIR:-$SCRIPT_DIR/tmp/pdfs}"
 EXTRA_ARGS="${PMERGE_EXTRA_ARGS:-}"
+KEYWORDS_FILE="${PMERGE_KEYWORDS_FILE:-}"
+
+if [ "$#" -eq 0 ] && [ -z "$KEYWORDS_FILE" ]; then
+  echo "Error: provide keywords or set PMERGE_KEYWORDS_FILE" >&2
+  exit 1
+fi
+
+args=(
+  python3 "$SCRIPT_DIR/skills/pdf-keyword-merge/scripts/keyword_merge.py"
+  --input-dir "$INPUT_DIR"
+  --keywords "$@"
+  --output-dir "$OUTPUT_DIR"
+  --output-name "$OUTPUT_NAME"
+  --tmp-dir "$TMP_DIR"
+)
+
+if [ -n "$KEYWORDS_FILE" ]; then
+  args+=(--keywords-file "$KEYWORDS_FILE")
+fi
 
 if [ -n "$EXTRA_ARGS" ]; then
-  # shellcheck disable=SC2086
-  exec python3 "$SCRIPT_DIR/skills/pdf-keyword-merge/scripts/keyword_merge.py" \
-    --input-dir "$INPUT_DIR" \
-    --keywords "$@" \
-    --output-dir "$OUTPUT_DIR" \
-    --tmp-dir "$TMP_DIR" \
-    $EXTRA_ARGS
-else
-  exec python3 "$SCRIPT_DIR/skills/pdf-keyword-merge/scripts/keyword_merge.py" \
-    --input-dir "$INPUT_DIR" \
-    --keywords "$@" \
-    --output-dir "$OUTPUT_DIR" \
-    --tmp-dir "$TMP_DIR"
+  # shellcheck disable=SC2206
+  extra_parts=($EXTRA_ARGS)
+  args+=("${extra_parts[@]}")
 fi
+
+exec "${args[@]}"

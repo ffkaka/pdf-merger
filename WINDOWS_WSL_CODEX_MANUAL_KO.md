@@ -122,13 +122,18 @@ codex skill install pdf
 프로젝트 루트에서 실행:
 
 ```bash
-./pmerge <폴더명> <키워드1> [키워드2 ...]
+./pmerge <폴더명> [키워드1 키워드2 ...]
 ```
 
 예시:
 ```bash
 cd ~/pdf-merger
 ./pmerge japan IC-211 IC-212 IC-220
+```
+
+키워드 파일 기반(권장):
+```bash
+PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt ./pmerge japan
 ```
 
 드라이런:
@@ -138,8 +143,15 @@ PMERGE_EXTRA_ARGS="--dry-run" ./pmerge japan IC-211 IC-212
 
 옵션 환경변수:
 - `PMERGE_OUTPUT_DIR` (기본: `~/pdf-merger/output/pdf`)
+- `PMERGE_OUTPUT_NAME` (기본: `merged_keywords.pdf`)
 - `PMERGE_TMP_DIR` (기본: `~/pdf-merger/tmp/pdfs`)
+- `PMERGE_KEYWORDS_FILE` (키워드 파일 경로)
 - `PMERGE_EXTRA_ARGS` (내부 Python 실행 옵션 전달)
+
+기본 용량 정책:
+- 출력 PDF는 기본 2MB 제한을 적용한다.
+- 2MB를 넘으면 자동으로 인덱스 분할 파일을 생성한다.
+  - 예: `merged_keywords_01.pdf`, `merged_keywords_02.pdf`
 
 ### 6-1) PMERGE_EXTRA_ARGS 상세 옵션 전체
 
@@ -202,11 +214,13 @@ IC-220
 ```
 - 사용 예:
 ```bash
-PMERGE_EXTRA_ARGS="--keywords-file /home/<USER>/pdf-merger/keywords.txt" pmerge japan PLACEHOLDER
+PMERGE_EXTRA_ARGS="--keywords-file /home/<USER>/pdf-merger/keywords.txt" pmerge japan
 ```
 
-`pmerge`는 최소 1개 키워드 인자를 요구하므로, `--keywords-file` 사용 시 임시 키워드(`PLACEHOLDER`)를 넣는다.  
-실제 매칭에는 `keywords.txt` 내용이 사용된다.
+같은 기능을 더 간단히 쓰려면 `PMERGE_KEYWORDS_FILE`을 사용한다.
+```bash
+PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt pmerge japan
+```
 
 ### 6-2) PMERGE_EXTRA_ARGS 조합 예시
 
@@ -222,7 +236,7 @@ PMERGE_EXTRA_ARGS="--match-mode content --no-recursive" pmerge japan IC-211 IC-2
 
 3. 키워드 파일 + 파일명 기준:
 ```bash
-PMERGE_EXTRA_ARGS="--keywords-file /home/<USER>/pdf-merger/keywords.txt --match-mode filename" pmerge japan PLACEHOLDER
+PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt PMERGE_EXTRA_ARGS="--match-mode filename" pmerge japan
 ```
 
 ### 6-3) 자주 하는 실수
@@ -236,9 +250,91 @@ PMERGE_EXTRA_ARGS="--keywords-file /home/<USER>/pdf-merger/keywords.txt --match-
 3. 파일명 기준이 필요한데 `--match-mode`를 지정하지 않음
 - 기본은 `content`이므로, 파일명 기준이면 반드시 `--match-mode filename`을 넣는다.
 
+4. 출력 파일명이 기본값으로 덮어써지는 문제
+- `PMERGE_OUTPUT_NAME`으로 작업별 파일명을 지정한다.
+- 예:
+```bash
+PMERGE_OUTPUT_NAME=shipment_A.pdf PMERGE_KEYWORDS_FILE=/home/<USER>/pdf-merger/keywords.txt pmerge japan
+```
+
 ---
 
-## 7. pmerge를 전역 명령으로 등록 (WSL)
+
+---
+
+## 7. Codex 프롬프트 예시 (머지 + 검증)
+
+아래 예시는 Codex 대화창(프롬프트)에서 그대로 사용할 수 있다.
+
+### 7-1) 왜 `@경로`를 붙여야 하나
+
+Codex 프롬프트에서 `@경로`를 붙이면 해당 파일/폴더를 작업 문맥으로 명확히 지정할 수 있다.
+
+장점:
+- 어떤 파일을 기준으로 작업할지 모호성이 줄어든다.
+- 현재 디렉터리 기준 상대경로를 그대로 써도 대상이 명확해진다.
+- `사용방법` 같은 추상 질의에서도 프로젝트 규칙(`@AGENTS.md`)을 근거로 일관된 답을 받기 쉽다.
+
+예:
+- `@AGENTS.md`
+- `@japan`
+- `@tmp/pdfs/keywords.txt`
+
+### 7-2) 가장 간단한 실행 예시 (상대경로 + 키워드 파일)
+
+```text
+@AGENTS.md 규칙대로 병합해.
+입력 폴더는 @japan, 키워드 파일은 @tmp/pdfs/keywords.txt 를 사용해.
+PMERGE_KEYWORDS_FILE 방식으로 실행하고 결과는 @output/pdf 에 저장해.
+머지 후 결과 PDF와 @tmp/pdfs/keyword_merge_report.json 존재 여부, 파일 크기, 첫 페이지 렌더링까지 검증해.
+검증 결과까지 요약해서 보고해.
+```
+
+### 7-3) 파일명 기준 머지(본문 미검색) 예시
+
+```text
+@japan 폴더를 파일명 기준으로만 필터링해서 병합해.
+키워드는 @tmp/pdfs/keywords.txt 파일에서 읽고,
+PMERGE_KEYWORDS_FILE + PMERGE_EXTRA_ARGS="--match-mode filename" 조합으로 실행해.
+2MB 초과 시 분할 파일(_01, _02 ...) 생성 여부까지 검증해.
+```
+
+### 7-4) 드라이런 후 실제 실행 예시
+
+```text
+먼저 드라이런으로 매칭 개수 확인하고, 그다음 실제 머지를 수행해.
+키워드 파일은 @tmp/pdfs/keywords.txt, 입력 폴더는 @japan.
+드라이런 결과와 실제 생성 결과를 비교해서 누락 여부를 확인해.
+```
+
+### 7-5) 출력 파일명 지정 + 검증 자동화 예시
+
+```text
+@tmp/pdfs/keywords.txt 키워드 파일로 병합해.
+출력 파일명은 shipment_2026_02.pdf 로 지정하고,
+완료 후 생성된 PDF 목록, 파일 크기, 리포트 match_count를 표 형태로 정리해.
+```
+
+### 7-6) "사용방법 알려줘" / "사용방법" 요청 시 권장 프롬프트
+
+아래처럼 `@AGENTS.md`와 실제 입력 경로를 함께 주면, Codex가 실행 가능한 형태로 안내하기 쉽다.
+
+```text
+@AGENTS.md 기준으로 이 프로젝트 사용방법 알려줘.
+특히 @japan 폴더와 @tmp/pdfs/keywords.txt 를 사용해서
+필터링, 병합, 2MB 초과 시 분할 생성, 검증까지 한 번에 하는 절차를
+초보자도 따라할 수 있게 명령어 중심으로 설명해줘.
+```
+
+검증 최소 체크리스트(프롬프트에 함께 넣기 권장):
+- 결과 PDF 존재 여부 (`output/pdf/*.pdf`)
+- 리포트 존재 여부 (`tmp/pdfs/keyword_merge_report.json`)
+- 키워드별 match_count 확인
+- 샘플 페이지 렌더링 검사(깨짐/누락/겹침)
+
+---
+
+## 8. pmerge를 전역 명령으로 등록 (WSL)
 
 WSL 어디서든 `pmerge` 실행하려면:
 
@@ -257,97 +353,7 @@ pmerge japan IC-211
 
 ---
 
-## 8. Windows 터미널에서 직접 실행 (비추천)
-
-권장 실행 환경은 WSL 내부 셸이다.  
-Windows 터미널에서 직접 실행하면 경로/인코딩/권한 차이로 장애가 더 자주 발생한다.
-
-원칙:
-- `pmerge`, Codex CLI, PDF 처리 명령은 모두 **WSL 터미널 내부**에서 실행한다.
-- 프로젝트도 `~/pdf-merger`처럼 WSL 홈 경로에 둔다.
-
-정말 필요할 때만 WSL 브릿지 실행을 사용하고, 운영 자동화에는 쓰지 않는다.
-
----
-
-## 9. 레이아웃 검수(권장)
-
-병합 결과 렌더링:
-```bash
-pdftoppm -png output/pdf/IC-211.pdf tmp/pdfs/IC-211
-```
-
-검수 항목:
-- 페이지 누락 여부
-- 글자 깨짐/잘림/겹침 여부
-- 표/이미지 해상도 이상 여부
-
----
-
-## 10. 스모크 테스트 체크리스트
-
-1. WSL에서 Codex 실행 확인:
-```bash
-codex --version
-```
-2. 프로젝트 접근 확인:
-```bash
-cd ~/pdf-merger && ls
-```
-3. 드라이런 확인:
-```bash
-PMERGE_EXTRA_ARGS="--dry-run" pmerge japan IC-211
-```
-4. 실제 병합 확인:
-```bash
-pmerge japan IC-211
-ls -lh output/pdf/IC-211.pdf
-```
-
----
-
-## 11. Codex 프롬프트 예시 (머지 + 검증)
-
-아래 예시는 Codex 대화창(프롬프트)에서 그대로 사용할 수 있다.
-
-1. 본문 검색 기반 머지 + 기본 검증
-```text
-AGENTS.md 규칙대로 japan 폴더에서 IC-211, IC-212 키워드로 병합해.
-결과는 output/pdf/에 저장하고, tmp/pdfs/에 리포트 저장해.
-머지 후 각 결과 PDF가 생성됐는지 파일 크기와 페이지 렌더링(첫 페이지)으로 검증해.
-검증 결과까지 요약해서 보고해.
-```
-
-2. 파일명 기준 머지(본문 미검색) + 검증
-```text
-japan 폴더 PDF를 파일명 기준으로만 매칭해서 IC-211, IC-220 병합해.
-PMERGE_EXTRA_ARGS=\"--match-mode filename\" 방식으로 실행하고,
-output/pdf 결과 파일 존재 여부와 tmp/pdfs/keyword_merge_report.json 내용을 함께 검증해.
-```
-
-3. 드라이런으로 사전 점검 후 실제 실행
-```text
-먼저 드라이런으로 매칭 개수 확인하고, 그다음 실제 머지를 수행해.
-키워드는 IC-211 IC-212 IC-220, 입력 폴더는 japan.
-드라이런 결과와 실제 생성 결과를 비교해서 누락 여부를 확인해.
-```
-
-4. 대량 키워드 파일 사용 + 검증 자동화
-```text
-/home/<USER>/pdf-merger/keywords.txt 키워드 파일로 병합해.
-필요하면 PLACEHOLDER 키워드를 함께 넣어 실행하고,
-완료 후 생성된 PDF 목록, 파일 크기, 리포트 match_count를 표 형태로 정리해.
-```
-
-검증 최소 체크리스트(프롬프트에 함께 넣기 권장):
-- 결과 PDF 존재 여부 (`output/pdf/*.pdf`)
-- 리포트 존재 여부 (`tmp/pdfs/keyword_merge_report.json`)
-- 키워드별 match_count 확인
-- 샘플 페이지 렌더링 검사(깨짐/누락/겹침)
-
----
-
-## 12. 자주 발생하는 문제
+## 9. 자주 발생하는 문제
 
 1. `codex: command not found`
 - 원인: 전역 npm bin 경로 미반영
@@ -370,24 +376,18 @@ chmod +x ~/pdf-merger/pmerge
 which gs
 ```
 
-4. Windows에서 `pmerge.ps1` 실행 정책 오류
-- 해결(현재 사용자 범위):
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
-
 ---
 
-## 13. 운영 권장사항
+## 10. 운영 권장사항
 
 - 대량 병합 작업은 WSL 내부에서 실행한다.
 - 결과물은 `output/pdf/`만 최종 산출물로 취급한다.
 - `tmp/pdfs/`는 중간 산출물/리포트 용도로 유지한다.
-- 키워드가 많으면 파일(`--keywords-file`) 기반으로 관리한다.
+- 키워드가 많으면 파일(`--keywords-file` 또는 `PMERGE_KEYWORDS_FILE`) 기반으로 관리한다.
 
 ---
 
-## 14. 공식 문서 링크
+## 11. 공식 문서 링크
 
 - Codex 소개: https://openai.com/codex/
 - Codex CLI 시작 문서: https://developers.openai.com/codex/cli
