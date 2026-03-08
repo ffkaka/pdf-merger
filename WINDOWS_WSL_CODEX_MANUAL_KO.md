@@ -1,7 +1,7 @@
 # Windows + WSL Codex/PDF Merger 완전 설치 매뉴얼 (한글)
 
 이 문서는 `github.com/ffkaka/pdf-merger` 프로젝트를 **Windows 환경에서 WSL2 기반으로 안정적으로 실행**하기 위한 전체 절차를 설명한다.  
-기준 날짜: **2026-02-22**
+기준 날짜: **2026-03-08**
 
 핵심 원칙:
 - Codex CLI의 Windows 네이티브 지원은 실험적일 수 있으므로, 실사용은 **WSL2(Ubuntu)** 기준으로 구성한다.
@@ -98,6 +98,30 @@ ls -la
 - 입력 PDF 폴더: `~/pdf-merger/japan`
 - 결과 폴더: `~/pdf-merger/output/pdf`
 - 임시 폴더: `~/pdf-merger/tmp/pdfs`
+
+### 4-1. 환경 셋업/업데이트 스크립트 사용
+
+이 저장소에는 재사용 가능한 환경 셋업 스크립트가 포함되어 있다.
+
+최초 1회 셋업:
+```bash
+cd ~/pdf-merger
+./scripts/setup_env.sh
+```
+
+기존 환경 업데이트(권장):
+```bash
+cd ~/pdf-merger
+./scripts/update_env.sh
+```
+
+동작 요약:
+- `setup_env.sh`: 필요한 디렉터리 생성, Python 패키지 설치, `codex skill install pdf` 시도
+- `update_env.sh`: `git pull --ff-only` 후 `setup_env.sh` 실행
+
+Git 추적 제외(산출물):
+- `output/pdf/`
+- `tmp/pdfs/`
 
 ---
 
@@ -240,6 +264,8 @@ which gs
 - 결과물은 `output/pdf/`만 최종 산출물로 취급한다.
 - `tmp/pdfs/`는 중간 산출물/리포트 용도로 유지한다.
 - 키워드가 많으면 파일(`--keywords-file`) 기반으로 관리한다.
+- 현재 환경 변경사항은 수시로 `git add/commit/push` 해서 GitHub 원격에 업데이트한다.
+- 다른 환경에서는 `./scripts/update_env.sh`를 실행해 동일 환경으로 동기화한다.
 
 ---
 
