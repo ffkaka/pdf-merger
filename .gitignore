@@ -1,0 +1,9 @@
+.DS_Store
+
+# Runtime outputs (do not version)
+output/pdf/
+tmp/pdfs/
+
+# Python cache
+__pycache__/
+*.pyc
