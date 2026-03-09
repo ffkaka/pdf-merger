@@ -69,6 +69,7 @@ cd docman
 
 ```bash
 cd docman
+git pull --ff-only
 ./scripts/update_env.sh
 ```
 

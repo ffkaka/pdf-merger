@@ -1,7 +1,7 @@
 # Windows + WSL Codex/PDF Merger 완전 설치 매뉴얼 (한글)
 
 이 문서는 `github.com/ffkaka/pdf-merger` 프로젝트를 **Windows 환경에서 WSL2 기반으로 안정적으로 실행**하기 위한 전체 절차를 설명한다.  
-기준 날짜: **2026-03-08**
+기준 날짜: **2026-03-09**
 
 핵심 원칙:
 - Codex CLI의 Windows 네이티브 지원은 실험적일 수 있으므로, 실사용은 **WSL2(Ubuntu)** 기준으로 구성한다.
@@ -109,9 +109,10 @@ cd ~/pdf-merger
 ./scripts/setup_env.sh
 ```
 
-기존 환경 업데이트(권장):
+기존 환경 업데이트(운영 중 환경 권장 순서):
 ```bash
 cd ~/pdf-merger
+git pull --ff-only
 ./scripts/update_env.sh
 ```
 
